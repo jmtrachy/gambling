@@ -48,7 +48,7 @@ def play_game(balance, total_dps, inner_bets, outer_bets):
 
     for j in range(60):
         spins = j + 1
-        dollar_adjustment = spin2(total_dps, inner_bets, outer_bets)
+        dollar_adjustment = spin(total_dps, inner_bets, outer_bets)
         current_balance += dollar_adjustment
         if dollar_adjustment >= 5 * total_dps:
             omgs += 1
@@ -59,25 +59,13 @@ def play_game(balance, total_dps, inner_bets, outer_bets):
     return NightAtTL(spins, current_balance, omgs, sum_of_omgs)
 
 
-def spin2(dps, inner_bets, outer_bets):
+def spin(dps, inner_bets, outer_bets):
     spin_position = random.randint(1, 38)
     returned_value = 0 - dps
 
     if spin_position in inner_bets:
         for bet in inner_bets[spin_position]:
             returned_value += bet.bet_return
-
-    return returned_value
-
-
-def spin(dps, inner_bets, outer_bets):
-    spin_position = random.randint(1, 38)
-    returned_value = 0 - dps
-
-    for bet in inner_bets:
-        for number in bet.numbers:
-            if number == spin_position:
-                returned_value += bet.bet_return
 
     for bet in outer_bets:
         for number in bet.numbers:
