@@ -3,31 +3,30 @@ from abc import ABCMeta, abstractmethod
 
 
 class Roulette():
-    def __init__(self, strategy):
-        self.ranges = self.create_ranges()
-        self.strategy = strategy
-
-    def spin(self):
+    @staticmethod
+    def __spin(strategy):
         spin_position = random.randint(1, 38)
-        returned_value = 0 - self.strategy.dollars_per_spin
+        returned_value = 0 - strategy.dollars_per_spin
 
-        if spin_position in self.strategy.inner_bet_map:
-            for bet in self.strategy.inner_bet_map[spin_position]:
+        if spin_position in strategy.inner_bet_map:
+            for bet in strategy.inner_bet_map[spin_position]:
                 returned_value += bet.bet_return
 
-        for bet in self.strategy.outside_bets:
+        for bet in strategy.outside_bets:
             for number in bet.numbers:
                 if number == spin_position:
                     returned_value += bet.bet_return
 
         return returned_value
 
-    def play(self, num_trips):
+    @staticmethod
+    def play(strategy, num_trips):
         trips_to_tl = []
         for i in range(0, num_trips):
-            trips_to_tl.append(self.head_to_tl())
+            trips_to_tl.append(Roulette.__head_to_tl(strategy))
 
-        percent_returns = self.initialize_returns_map()
+        ranges = Roulette.__create_ranges()
+        percent_returns = Roulette.__initialize_returns_map(ranges)
 
         # start of non-checked changes
         max_winnings = 0
@@ -35,20 +34,20 @@ class Roulette():
         sum_of_omgs = 0
 
         for trip_to_tl in trips_to_tl:
-            percent_return = trip_to_tl.result / float(self.strategy.starting_balance)
+            percent_return = trip_to_tl.result / float(strategy.starting_balance)
             if trip_to_tl.result > max_winnings:
                 max_winnings = trip_to_tl.result
             total_omgs += trip_to_tl.omgs
             sum_of_omgs += trip_to_tl.omg_total
 
-            self.add_total_to_ranges(percent_returns, self.ranges, percent_return)
+            Roulette.__add_total_to_ranges(percent_returns, ranges, percent_return)
 
         chances_of_losing_money = 0
         chances_of_breaking_even = 0
         chances_of_doubling = 0
         chances_of_winning = 0
 
-        for r in self.ranges:
+        for r in ranges:
             percent_of_pot = percent_returns[r.label] / float(num_trips)
             if r.min < .9:
                 chances_of_losing_money += percent_of_pot
@@ -70,32 +69,35 @@ class Roulette():
         if total_omgs > 0:
             print("Average OMG Moments: {:.2}".format(total_omgs / float(num_trips)) + " with an average OMG payout of $" + str(sum_of_omgs / float(total_omgs)))
 
-    def initialize_returns_map(self):
+    @staticmethod
+    def __initialize_returns_map(ranges):
         range_map = {}
-        for r in self.ranges:
+        for r in ranges:
             range_map[r.label] = 0
 
         return range_map
 
-    def head_to_tl(self):
-        current_balance = self.strategy.starting_balance
+    @staticmethod
+    def __head_to_tl(strategy):
+        current_balance = strategy.starting_balance
         spins = 0
         omgs = 0
         sum_of_omgs = 0
 
         for j in range(60):
             spins = j + 1
-            dollar_adjustment = self.spin()
+            dollar_adjustment = Roulette.__spin(strategy)
             current_balance += dollar_adjustment
-            if dollar_adjustment >= 5 * self.strategy.dollars_per_spin:
+            if dollar_adjustment >= 5 * strategy.dollars_per_spin:
                 omgs += 1
                 sum_of_omgs += dollar_adjustment
-            if current_balance < self.strategy.dollars_per_spin: # current_balance > 2 * self.strategy.starting_balance:
+            if current_balance < strategy.dollars_per_spin: # current_balance > 2 * self.strategy.starting_balance:
                 break
 
         return NightAtTL(spins, current_balance, omgs, sum_of_omgs)
 
-    def add_total_to_ranges(self, pct_returns, all_ranges, result):
+    @staticmethod
+    def __add_total_to_ranges(pct_returns, all_ranges, result):
         bucketed = False
         for r in all_ranges:
             if r.min <= result < r.max:
@@ -104,7 +106,8 @@ class Roulette():
         if not bucketed:
             print("Did not bucket: " + str(result))
 
-    def create_ranges(self):
+    @staticmethod
+    def __create_ranges():
         ranges = []
         ranges.append(Range("-100-90%", 0, .1))
         ranges.append(Range("-90-80%", .1, .2))
@@ -231,7 +234,6 @@ class InsideBet(Bet):
 
 
 if __name__ == "__main__":
-    print("whatever")
 
     inners = []
     inners.extend([InsideBet([17]), InsideBet([16, 17, 13, 14]), InsideBet([17, 18, 14, 15]), InsideBet([17, 20, 16, 19]), InsideBet([17, 20, 18, 21])])
@@ -239,6 +241,4 @@ if __name__ == "__main__":
 
     outers = []
     rs = RouletteStrategy(inners, outers, 60, 300)
-
-    r = Roulette(rs)
-    r.play(100000)
+    Roulette.play(rs, 100000)
