@@ -1,4 +1,5 @@
 import random
+import time
 from abc import ABCMeta, abstractmethod
 
 
@@ -20,12 +21,12 @@ class Roulette():
         return returned_value
 
     @staticmethod
-    def play(strategy, num_trips):
+    def play(strategy, num_trips = 100000):
         trips_to_tl = []
         for i in range(0, num_trips):
-            trips_to_tl.append(Roulette.__head_to_tl(strategy))
+            trips_to_tl.append(Roulette.__head_to_tl(strategy, num_trips))
 
-        ranges = Roulette.__create_ranges()
+        ranges = Roulette.create_ranges()
         percent_returns = Roulette.initialize_returns_map(ranges)
 
         # start of non-checked changes
@@ -40,7 +41,7 @@ class Roulette():
             total_omgs += trip_to_tl.omgs
             sum_of_omgs += trip_to_tl.omg_total
 
-            Roulette.__add_total_to_ranges(percent_returns, ranges, percent_return)
+            Roulette.add_total_to_ranges(percent_returns, ranges, percent_return)
 
         chances_of_losing_money = 0
         chances_of_breaking_even = 0
@@ -69,7 +70,7 @@ class Roulette():
         if total_omgs > 0:
             print("Average OMG Moments: {:.2}".format(total_omgs / float(num_trips)) + " with an average OMG payout of $" + str(sum_of_omgs / float(total_omgs)))
 
-        return RouletteStrategyResult(ranges, max_winnings)
+        return RouletteStrategyResult(trips_to_tl, max_winnings)
 
     @staticmethod
     def initialize_returns_map(ranges):
@@ -80,13 +81,13 @@ class Roulette():
         return range_map
 
     @staticmethod
-    def __head_to_tl(strategy):
+    def __head_to_tl(strategy, num_trips):
         current_balance = strategy.starting_balance
         spins = 0
         omgs = 0
         sum_of_omgs = 0
 
-        for j in range(60):
+        for j in range(strategy.num_spins):
             spins = j + 1
             dollar_adjustment = Roulette.__spin(strategy)
             current_balance += dollar_adjustment
@@ -99,7 +100,7 @@ class Roulette():
         return NightAtTL(spins, current_balance, omgs, sum_of_omgs)
 
     @staticmethod
-    def __add_total_to_ranges(pct_returns, all_ranges, result):
+    def add_total_to_ranges(pct_returns, all_ranges, result):
         bucketed = False
         for r in all_ranges:
             if r.min <= result < r.max:
@@ -109,7 +110,7 @@ class Roulette():
             print("Did not bucket: " + str(result))
 
     @staticmethod
-    def __create_ranges():
+    def create_ranges():
         ranges = []
         ranges.append(Range("-100-90%", 0, .1))
         ranges.append(Range("-90-80%", .1, .2))
@@ -177,8 +178,8 @@ class RouletteStrategy():
 
 
 class RouletteStrategyResult():
-    def __init__(self, ranges, max_winnings):
-        self.ranges = ranges
+    def __init__(self, trips_to_tl, max_winnings):
+        self.trips_to_tl = trips_to_tl
         self.max_winnings = max_winnings
 
 
@@ -241,12 +242,22 @@ class InsideBet(Bet):
         return bet_return
 
 
+def current_time_millis():
+    return int(round(time.time() * 1000))
+
+
 if __name__ == "__main__":
+    start_millis = current_time_millis()
 
     inners = []
+
+    # Jimbob power numbers
     inners.extend([InsideBet([17]), InsideBet([16, 17, 13, 14]), InsideBet([17, 18, 14, 15]), InsideBet([17, 20, 16, 19]), InsideBet([17, 20, 18, 21])])
     inners.extend([InsideBet([22, 23, 25, 26]), InsideBet([23, 24, 26, 27]), InsideBet([25, 26, 28, 29]), InsideBet([26, 27, 29, 30]), InsideBet([26])])
 
     outers = []
     rs = RouletteStrategy(inners, outers, 60, 300)
-    Roulette.play(rs, 100000)
+    Roulette.play(rs)
+
+    end_millis = current_time_millis()
+    print("Execution took " + str(end_millis - start_millis) + " milliseconds.")
