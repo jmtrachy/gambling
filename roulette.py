@@ -26,7 +26,7 @@ class Roulette():
             trips_to_tl.append(Roulette.__head_to_tl(strategy))
 
         ranges = Roulette.__create_ranges()
-        percent_returns = Roulette.__initialize_returns_map(ranges)
+        percent_returns = Roulette.initialize_returns_map(ranges)
 
         # start of non-checked changes
         max_winnings = 0
@@ -69,8 +69,10 @@ class Roulette():
         if total_omgs > 0:
             print("Average OMG Moments: {:.2}".format(total_omgs / float(num_trips)) + " with an average OMG payout of $" + str(sum_of_omgs / float(total_omgs)))
 
+        return RouletteStrategyResult(ranges, max_winnings)
+
     @staticmethod
-    def __initialize_returns_map(ranges):
+    def initialize_returns_map(ranges):
         range_map = {}
         for r in ranges:
             range_map[r.label] = 0
@@ -172,6 +174,12 @@ class RouletteStrategy():
                 inner_bet_map[num] = bet_list
 
         return inner_bet_map
+
+
+class RouletteStrategyResult():
+    def __init__(self, ranges, max_winnings):
+        self.ranges = ranges
+        self.max_winnings = max_winnings
 
 
 class Range():
