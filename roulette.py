@@ -9,9 +9,7 @@ class Roulette():
         spin_position = random.randint(1, 38)
         returned_value = 0 - strategy.dollars_per_spin
 
-        if spin_position in strategy.inner_bet_map:
-            for bet in strategy.inner_bet_map[spin_position]:
-                returned_value += bet.bet_return
+        returned_value += strategy.inside_bet_returns.get(spin_position)
 
         for bet in strategy.outside_bets:
             for number in bet.numbers:
@@ -23,17 +21,23 @@ class Roulette():
     @staticmethod
     def play(strategy, num_trips = 100000):
         trips_to_tl = []
+        print("Heading to the casino")
         for i in range(0, num_trips):
             trips_to_tl.append(Roulette.__head_to_tl(strategy, num_trips))
+        print("Returning from the casino")
 
         ranges = Roulette.create_ranges()
+        print("initializing return maps")
         percent_returns = Roulette.initialize_returns_map(ranges)
+        print("return maps initialized")
 
         # start of non-checked changes
         max_winnings = 0
         total_omgs = 0
         sum_of_omgs = 0
+        total_time_at_tl = 0
 
+        print("putting results in buckets")
         for trip_to_tl in trips_to_tl:
             percent_return = trip_to_tl.result / float(strategy.starting_balance)
             if trip_to_tl.result > max_winnings:
@@ -41,6 +45,7 @@ class Roulette():
             total_omgs += trip_to_tl.omgs
             sum_of_omgs += trip_to_tl.omg_total
 
+            total_time_at_tl += trip_to_tl.time_at_tl
             Roulette.add_total_to_ranges(percent_returns, ranges, percent_return)
 
         chances_of_losing_money = 0
@@ -48,6 +53,7 @@ class Roulette():
         chances_of_doubling = 0
         chances_of_winning = 0
 
+        print("calculating aggregate totals")
         for r in ranges:
             percent_of_pot = percent_returns[r.label] / float(num_trips)
             if r.min < .9:
@@ -67,6 +73,8 @@ class Roulette():
         print("Chances of breaking even: {:.2%}".format(chances_of_breaking_even))
         print("Chances of winning: {:.2%}".format(chances_of_winning))
         print("Chances of doubling: {:.2%}".format(chances_of_doubling))
+        print("Total time at TL = " + str(total_time_at_tl))qwwq
+        print("Average time at casino: " + str(format(total_time_at_tl / float(num_trips))))
         if total_omgs > 0:
             print("Average OMG Moments: {:.2}".format(total_omgs / float(num_trips)) + " with an average OMG payout of $" + str(sum_of_omgs / float(total_omgs)))
 
@@ -82,6 +90,7 @@ class Roulette():
 
     @staticmethod
     def __head_to_tl(strategy, num_trips):
+        start_head_to_tl_timer = current_time_millis()
         current_balance = strategy.starting_balance
         spins = 0
         omgs = 0
@@ -97,7 +106,8 @@ class Roulette():
             if current_balance < strategy.dollars_per_spin: # current_balance > 2 * self.strategy.starting_balance:
                 break
 
-        return NightAtTL(spins, current_balance, omgs, sum_of_omgs)
+        end_head_to_tl_timer = current_time_millis()
+        return NightAtTL(spins, current_balance, omgs, sum_of_omgs, end_head_to_tl_timer - start_head_to_tl_timer)
 
     @staticmethod
     def add_total_to_ranges(pct_returns, all_ranges, result):
@@ -141,11 +151,12 @@ class Roulette():
 
 
 class NightAtTL():
-    def __init__(self, spins, result, omg_moments, omg_total):
+    def __init__(self, spins, result, omg_moments, omg_total, time_at_tl):
         self.spins = spins
         self.result = result
         self.omgs = omg_moments
         self.omg_total = omg_total
+        self.time_at_tl = time_at_tl
 
 
 class RouletteStrategy():
@@ -154,27 +165,44 @@ class RouletteStrategy():
         self.outside_bets = outsides
         self.num_spins = num_spins
         self.starting_balance = starting_balance
-        self.dollars_per_spin = self.compute_dollars_per_spin(self.inside_bets, self.outside_bets)
-        self.inner_bet_map = self.generate_inside_bet_map(self.inside_bets)
+        self.dollars_per_spin = self.compute_dollars_per_spin()
+        self.inner_bet_map = self.generate_inside_bet_map()
+        self.inside_bet_returns = self.generate_inside_bet_returns()
 
-    def compute_dollars_per_spin(self, inner_bets, outer_bets):
-        total_dps = len(inner_bets)
-        for outer_bet in outer_bets:
+    def compute_dollars_per_spin(self):
+        total_dps = len(self.inside_bets)
+        for outer_bet in self.outside_bets:
             total_dps += outer_bet.num_bets
 
         print("Each spin costs $" + str(total_dps))
         return total_dps
 
-    def generate_inside_bet_map(self, inner_bet_list):
+    def generate_inside_bet_map(self):
         inner_bet_map = {}
 
-        for bet in inner_bet_list:
+        for bet in self.inside_bets:
             for num in bet.numbers:
                 bet_list = inner_bet_map.get(num, [])
                 bet_list.append(bet)
                 inner_bet_map[num] = bet_list
 
         return inner_bet_map
+
+    def generate_inside_bet_returns(self):
+        inside_bet_returns = {}
+        for num in range(1, 39):
+            inside_bet_returns[num] = self.compute_inside_spin_return(num)
+            print("Return for spinning a " + str(num) + " = " + str(self.compute_inside_spin_return(num)))
+
+        return inside_bet_returns
+
+    def compute_inside_spin_return(self, spin_position):
+        returned_value = 0
+        if spin_position in self.inner_bet_map:
+            for bet in self.inner_bet_map[spin_position]:
+                returned_value += bet.bet_return
+
+        return returned_value
 
 
 class RouletteStrategyResult():
