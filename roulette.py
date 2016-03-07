@@ -73,7 +73,7 @@ class Roulette():
         print("Chances of breaking even: {:.2%}".format(chances_of_breaking_even))
         print("Chances of winning: {:.2%}".format(chances_of_winning))
         print("Chances of doubling: {:.2%}".format(chances_of_doubling))
-        print("Total time at TL = " + str(total_time_at_tl))qwwq
+        print("Total time at TL = " + str(total_time_at_tl))
         print("Average time at casino: " + str(format(total_time_at_tl / float(num_trips))))
         if total_omgs > 0:
             print("Average OMG Moments: {:.2}".format(total_omgs / float(num_trips)) + " with an average OMG payout of $" + str(sum_of_omgs / float(total_omgs)))
