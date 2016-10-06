@@ -1,4 +1,6 @@
+import argparse
 import random
+from operator import attrgetter
 
 
 class Card():
@@ -8,24 +10,26 @@ class Card():
         self.value = value
         self.count_value = count_value
 
+
 class Deck():
     def __init__(self):
         self.cards = []
 
         for j in range(0, 4):
-            self.cards.append(Card("A", j, 1, -6))
+            self.cards.append(Card("A", j, 1, -2))
             self.cards.append(Card("2", j, 2, 1))
             self.cards.append(Card("3", j, 3, 1))
             self.cards.append(Card("4", j, 4, 1))
             self.cards.append(Card("5", j, 5, 1))
-            self.cards.append(Card("6", j, 6, 1))
-            self.cards.append(Card("7", j, 7, 1))
-            self.cards.append(Card("8", j, 8, 0))
-            self.cards.append(Card("9", j, 9, 0))
-            self.cards.append(Card("10", j, 10, 0))
-            self.cards.append(Card("J", j, 10, 0))
-            self.cards.append(Card("Q", j, 10, 0))
-            self.cards.append(Card("K", j, 10, 0))
+            self.cards.append(Card("6", j, 6, -2))
+            self.cards.append(Card("7", j, 7, -3))
+            self.cards.append(Card("8", j, 8, -2))
+            self.cards.append(Card("9", j, 9, 1))
+            self.cards.append(Card("10", j, 10, 1))
+            self.cards.append(Card("J", j, 10, 1))
+            self.cards.append(Card("Q", j, 10, 1))
+            self.cards.append(Card("K", j, 10, 1))
+
 
 class Shoe():
     def __init__(self):
@@ -35,7 +39,8 @@ class Shoe():
             deck = Deck()
             self.cards.extend(deck.cards)
 
-        self.count = self.determine_count()
+        #self.count = self.determine_count()
+        self.count = 0
 
     def determine_count(self):
         the_count = 0
@@ -49,6 +54,7 @@ class Shoe():
         self.count += card_to_deal.count_value
 
         return card_to_deal
+
 
 class Game():
     def __init__(self, shoe, bet_size, bankroll, vary_betting=False):
@@ -65,7 +71,9 @@ class Game():
 
     def deal_hand(self):
         current_count = self.shoe.count
+        #print("current count = " + str(current_count))
         burn_card = self.shoe.deal_card()
+        #print("burn card = " + str(burn_card.name) + "; remaining count = " + str(self.shoe.count))
 
         card1 = self.shoe.deal_card()
         card2 = self.shoe.deal_card()
@@ -76,27 +84,39 @@ class Game():
         bet = self.compute_bet(current_count)
 
         change_in_stack = self.compute_winnings(value, card1, card2, card3)
-        #if change_in_stack > 30:
+        #if change_in_stack > 50:
         #    print("WOW! Just hit a " + str(change_in_stack) + " return!")
-        self.bankroll += self.bet_size * change_in_stack
+        self.bankroll += bet * change_in_stack
 
     def compute_bet(self, current_count):
         bet = self.bet_size
+        true_count = 0
 
         if current_count > 0 and self.vary_betting:
             decks_remaining = len(self.shoe.cards) / 52
-            actual_multiplier = current_count * 2 / decks_remaining
-            floor = current_count * 2 // decks_remaining
+            actual_multiplier = current_count / decks_remaining
+            floor = current_count // decks_remaining
+
+            #print("decks = " + str(decks_remaining) + "; current count = " + str(current_count) + "; mtplr = " + str(actual_multiplier))
 
             if actual_multiplier - floor < 0.5:
                 if floor != 0.0:
-                    bet = floor * self.bet_size
+                    true_count = floor
             else:
-                bet = (floor + 1) * self.bet_size
+                true_count = floor + 1
+
+        if true_count < 2 and self.vary_betting:
+            bet = 0
+        elif true_count >= 2 and self.vary_betting:
+            bet = self.bet_size * (true_count - 2)
+
+        if bet > 25:
+            bet = 25
 
         if bet > self.bankroll:
             bet = self.bankroll
 
+        #print("true_count = " + str(true_count) + "; bet = " + str(bet))
         return bet
 
 
@@ -164,17 +184,39 @@ if __name__ == "__main__":
     num_iterations = 10000
     total_bankroll = 0
     starting_bankroll = 200
-    vary_betting = False
+    vary_betting = True
     min_bet = 5
+
+    parser = argparse.ArgumentParser(description='Gathering arguments')
+    parser.add_argument("-v", required=False, dest="vary", action="store", help="Whether to vary betting or not - default True")
+    parser.add_argument("-n", required=False, dest="iterations", action="store", help="Number of shoes - default is 10000")
+    args = parser.parse_args()
+
+    if args.vary == "False":
+        vary_betting = False
+
+    if args.iterations is not None:
+        num_iterations = int(args.iterations)
 
     num_times_losing_everything = 0
     num_times_doubling = 0
 
     print("analysis for starting bankroll = " + str(starting_bankroll) + "; min bet = " + str(min_bet) + "; vary betting = " + str(vary_betting) + "; " + str(num_iterations) + " shoes")
 
+    games = []
+    games_map = {}
     for j in range(0, num_iterations):
         game = Game(Shoe(), min_bet, starting_bankroll, vary_betting)
         end_bankroll = game.play()
+        games.append(game)
+
+        games_key = end_bankroll
+        level_to_update = 0
+        if games_key in games_map:
+            level_to_update = games_map[games_key]
+
+        level_to_update += 1
+        games_map[games_key] = level_to_update
 
         if end_bankroll > 2 * starting_bankroll:
             num_times_doubling += 1
@@ -185,4 +227,9 @@ if __name__ == "__main__":
         if j % 1000 == 0:
             print('.', end="", flush=True)
 
-    print("average ending bankroll = " + str(total_bankroll / num_iterations) + ". Lost everything " + str(num_times_losing_everything) + " times and doubled up " + str(num_times_doubling))
+    games = sorted(games, key=attrgetter('bankroll'), reverse=True)
+    print("avg ending bankroll = " + str(total_bankroll / num_iterations) + ". median = " + str(games[num_iterations // 2].bankroll) + ". Lost everything " + str(num_times_losing_everything) + " times and doubled up " + str(num_times_doubling))
+
+    games_aggregate = sorted(games_map.keys())
+    for key in games_aggregate:
+        print("Ended with $" + str(key) + " dollars after a single shoe " + str(games_map[key]) + " times out of " + str(num_iterations) + " shoes.")
