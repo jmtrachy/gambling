@@ -91,6 +91,7 @@ class Game():
     def compute_bet(self, current_count):
         bet = self.bet_size
         true_count = 0
+        bet_threshold = 2
 
         if current_count > 0 and self.vary_betting:
             decks_remaining = len(self.shoe.cards) / 52
@@ -105,10 +106,10 @@ class Game():
             else:
                 true_count = floor + 1
 
-        if true_count < 2 and self.vary_betting:
+        if true_count < bet_threshold and self.vary_betting:
             bet = 0
-        elif true_count >= 2 and self.vary_betting:
-            bet = self.bet_size * (true_count - 2)
+        elif true_count >= bet_threshold and self.vary_betting:
+            bet = self.bet_size * (true_count - bet_threshold)
 
         if bet > 25:
             bet = 25
@@ -118,7 +119,6 @@ class Game():
 
         #print("true_count = " + str(true_count) + "; bet = " + str(bet))
         return bet
-
 
     def compute_winnings(self, card_total, card1, card2, card3):
         adjustment = -1
@@ -159,7 +159,6 @@ class Game():
 
         return contains_six and contains_seven and contains_eight
 
-
     def compute_total(self, card1, card2, card3):
         num_aces = 0
         if card1.name == "A":
@@ -174,10 +173,6 @@ class Game():
             total_value += 10
 
         return total_value
-
-
-
-
 
 
 if __name__ == "__main__":
@@ -244,9 +239,9 @@ if __name__ == "__main__":
     games = sorted(games, key=attrgetter('bankroll'), reverse=True)
     print("avg ending bankroll = " + str(total_bankroll / num_iterations) + ". median = " + str(games[num_iterations // 2].bankroll) + ". Lost everything " + str(num_times_losing_everything) + " times and doubled up " + str(num_times_doubling))
 
-    #games_aggregate = sorted(games_map.keys())
-    #for key in games_aggregate:
-    #    print("Ended with $" + str(key) + " dollars after a single shoe " + str(games_map[key]) + " times out of " + str(num_iterations) + " shoes.")
+    games_aggregate = sorted(games_map.keys())
+    for key in games_aggregate:
+        print("Ended with $" + str(key) + " dollars after a single shoe " + str(games_map[key]) + " times out of " + str(num_iterations) + " shoes.")
 
     print("Made money on " + str(made_money) + " out of " + str(num_iterations) + " shoes.")
     print("Even money on " + str(even_money) + " out of " + str(num_iterations) + " shoes.")
