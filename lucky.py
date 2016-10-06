@@ -190,6 +190,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Gathering arguments')
     parser.add_argument("-v", required=False, dest="vary", action="store", help="Whether to vary betting or not - default True")
     parser.add_argument("-n", required=False, dest="iterations", action="store", help="Number of shoes - default is 10000")
+    parser.add_argument("-b", required=False, dest="bankroll", action="store", help="Starting bankroll - default is 200")
     args = parser.parse_args()
 
     if args.vary == "False":
@@ -198,6 +199,9 @@ if __name__ == "__main__":
     if args.iterations is not None:
         num_iterations = int(args.iterations)
 
+    if args.bankroll is not None:
+        starting_bankroll = int(args.bankroll)
+
     num_times_losing_everything = 0
     num_times_doubling = 0
 
@@ -205,10 +209,20 @@ if __name__ == "__main__":
 
     games = []
     games_map = {}
+    made_money = 0
+    even_money = 0
+    lost_money = 0
     for j in range(0, num_iterations):
         game = Game(Shoe(), min_bet, starting_bankroll, vary_betting)
         end_bankroll = game.play()
         games.append(game)
+
+        if end_bankroll > starting_bankroll:
+            made_money += 1
+        elif end_bankroll == starting_bankroll:
+            even_money += 1
+        else:
+            lost_money += 1
 
         games_key = end_bankroll
         level_to_update = 0
@@ -230,6 +244,10 @@ if __name__ == "__main__":
     games = sorted(games, key=attrgetter('bankroll'), reverse=True)
     print("avg ending bankroll = " + str(total_bankroll / num_iterations) + ". median = " + str(games[num_iterations // 2].bankroll) + ". Lost everything " + str(num_times_losing_everything) + " times and doubled up " + str(num_times_doubling))
 
-    games_aggregate = sorted(games_map.keys())
-    for key in games_aggregate:
-        print("Ended with $" + str(key) + " dollars after a single shoe " + str(games_map[key]) + " times out of " + str(num_iterations) + " shoes.")
+    #games_aggregate = sorted(games_map.keys())
+    #for key in games_aggregate:
+    #    print("Ended with $" + str(key) + " dollars after a single shoe " + str(games_map[key]) + " times out of " + str(num_iterations) + " shoes.")
+
+    print("Made money on " + str(made_money) + " out of " + str(num_iterations) + " shoes.")
+    print("Even money on " + str(even_money) + " out of " + str(num_iterations) + " shoes.")
+    print("Lost money on " + str(lost_money) + " out of " + str(num_iterations) + " shoes.")
