@@ -35,7 +35,7 @@ class Shoe():
     def __init__(self):
         self.cards = []
 
-        for j in range(1, 6):
+        for j in range(1, 7):
             deck = Deck()
             self.cards.extend(deck.cards)
 
@@ -64,9 +64,12 @@ class Game():
         self.vary_betting = vary_betting
 
     def play(self):
+        num_hands = 0
         while (len(self.shoe.cards) > 52 and self.bankroll > 0):
             self.deal_hand()
+            num_hands += 1
 
+        #print("Number of hands per shoe = " + str(num_hands))
         return self.bankroll
 
     def deal_hand(self):
@@ -234,7 +237,7 @@ if __name__ == "__main__":
 
         total_bankroll += end_bankroll
         if j % 1000 == 0:
-            print('.', end="", flush=True)
+            print('.', end='', flush=True)
 
     games = sorted(games, key=attrgetter('bankroll'), reverse=True)
     print("avg ending bankroll = " + str(total_bankroll / num_iterations) + ". median = " + str(games[num_iterations // 2].bankroll) + ". Lost everything " + str(num_times_losing_everything) + " times and doubled up " + str(num_times_doubling))

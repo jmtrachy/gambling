@@ -3,7 +3,7 @@ import time
 from abc import ABCMeta, abstractmethod
 
 
-class Roulette():
+class Roulette:
     @staticmethod
     def __spin(strategy):
         spin_position = random.randint(1, 38)
@@ -36,12 +36,16 @@ class Roulette():
         total_omgs = 0
         sum_of_omgs = 0
         total_time_at_tl = 0
+        total_times_max_win = 0
 
         print("putting results in buckets")
         for trip_to_tl in trips_to_tl:
             percent_return = trip_to_tl.result / float(strategy.starting_balance)
             if trip_to_tl.result > max_winnings:
                 max_winnings = trip_to_tl.result
+                total_times_max_win = 1
+            elif trip_to_tl.result == max_winnings:
+                total_times_max_win += 1
             total_omgs += trip_to_tl.omgs
             sum_of_omgs += trip_to_tl.omg_total
 
@@ -64,10 +68,11 @@ class Roulette():
                 chances_of_doubling += percent_of_pot
             if r.label == "-10+10%":
                 chances_of_breaking_even = percent_of_pot
-            print(r.label + " = " + str(percent_returns[r.label]) + "; {:.2%}".format(percent_of_pot))
+            if percent_of_pot > 0:
+                print(r.label + " = " + str(percent_returns[r.label]) + "; {:.2%}".format(percent_of_pot))
 
         print("")
-        print("Best trip to Turtle lake results in: " + str(max_winnings))
+        print("Best trip to Turtle lake results in: " + str(max_winnings) + " - which happened " + str(total_times_max_win) + " times")
         print("")
         print("Chances of losing money: {:.2%}".format(chances_of_losing_money))
         print("Chances of breaking even: {:.2%}".format(chances_of_breaking_even))
@@ -145,12 +150,21 @@ class Roulette():
         ranges.append(Range("120-150%", 2.2, 2.5))
         ranges.append(Range("150-200%", 2.5, 3))
         ranges.append(Range("200-300%", 3, 4))
-        ranges.append(Range("300%+", 4, 1000))
+        ranges.append(Range("300-400%", 4, 5))
+        ranges.append(Range("400-500%", 5, 6))
+        ranges.append(Range("500%+", 6, 7000))
+
+        # temporary ranges for $20 17 bets
+        #ranges.append(Range("single hit", 5, 10))
+        #ranges.append(Range("double hit", 10, 16))
+        #ranges.append(Range("triple hit", 16, 25))
+        #ranges.append(Range("quads!!!", 25, 30))
+        #ranges.append(Range("ALL FIVE", 30, 50))
 
         return ranges
 
 
-class NightAtTL():
+class NightAtTL:
     def __init__(self, spins, result, omg_moments, omg_total, time_at_tl):
         self.spins = spins
         self.result = result
@@ -159,7 +173,7 @@ class NightAtTL():
         self.time_at_tl = time_at_tl
 
 
-class RouletteStrategy():
+class RouletteStrategy:
     def __init__(self, insides, outsides, num_spins, starting_balance):
         self.inside_bets = insides
         self.outside_bets = outsides
@@ -205,13 +219,13 @@ class RouletteStrategy():
         return returned_value
 
 
-class RouletteStrategyResult():
+class RouletteStrategyResult:
     def __init__(self, trips_to_tl, max_winnings):
         self.trips_to_tl = trips_to_tl
         self.max_winnings = max_winnings
 
 
-class Range():
+class Range:
     def __init__(self, label, min_val, max_val):
         self.label = label
         self.min = min_val
@@ -219,7 +233,7 @@ class Range():
 
 
 # The bet class and its subclasses
-class Bet():
+class Bet:
     __metaclass__ = ABCMeta
 
     @abstractmethod
@@ -274,18 +288,37 @@ def current_time_millis():
     return int(round(time.time() * 1000))
 
 
+def add_bets_to_single_number(num_bets, number, bet_collection):
+    for j in range(0, num_bets):
+        bet_collection.append(InsideBet([number]))
+
+
+#def add_bets_to_two_numbers(num_bets)
+
 if __name__ == "__main__":
     start_millis = current_time_millis()
 
     inners = []
 
-    # Jimbob power numbers
-    inners.extend([InsideBet([17]), InsideBet([16, 17, 13, 14]), InsideBet([17, 18, 14, 15]), InsideBet([17, 20, 16, 19]), InsideBet([17, 20, 18, 21])])
-    inners.extend([InsideBet([22, 23, 25, 26]), InsideBet([23, 24, 26, 27]), InsideBet([25, 26, 28, 29]), InsideBet([26, 27, 29, 30]), InsideBet([26])])
+    bet_size = 50
+    # $20 on 17
+    add_bets_to_single_number(bet_size, 17, inners)
+    # $20 on 20
+    add_bets_to_single_number(bet_size, 26, inners)
+    # $20 on 20
+    #add_bets_to_single_number(bet_size, 5, inners)
+    # $20 on 20
+    #add_bets_to_single_number(bet_size, 14, inners)
+
+
+    # inners.extend([InsideBet([17]), InsideBet([16, 17, 13, 14]), InsideBet([17, 18, 14, 15]), InsideBet([17, 20, 16, 19]), InsideBet([17, 20, 18, 21])])
+    # inners.extend([InsideBet([22, 23, 25, 26]), InsideBet([23, 24, 26, 27]), InsideBet([25, 26, 28, 29]), InsideBet([26, 27, 29, 30]), InsideBet([26])])
+    # inners.extend([InsideBet([26]), InsideBet([22, 23, 25, 26]), InsideBet([23, 24, 26, 27]), InsideBet([25, 26, 28, 29]), InsideBet([26, 27, 29, 30]), InsideBet([26, 23]), InsideBet([26, 25]), InsideBet([26, 27]), InsideBet([26, 29])])
+
 
     outers = []
-    rs = RouletteStrategy(inners, outers, 60, 300)
-    Roulette.play(rs)
+    rs = RouletteStrategy(inners, outers, 4, 400)
+    Roulette.play(rs, 1000000)
 
     end_millis = current_time_millis()
     print("Execution took " + str(end_millis - start_millis) + " milliseconds.")

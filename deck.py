@@ -11,6 +11,9 @@ class Card():
         self.value = value
         self.is_ace = is_ace
 
+    def print_str(self):
+        return self.name + " of " + str(self.suit.name) + "s"
+
 
 class Deck():
     @staticmethod
@@ -60,7 +63,11 @@ class Shoe():
     def __init__(self, cards):
         self.cards = cards
 
+    def deal_card(self):
+        return self.cards.pop()
+
 if __name__ == "__main__":
-    shoe = Shoe.create_shoe(1)
-    for c in shoe.cards:
-        print(c.name + " of " + str(c.suit.name) + "; value=" + str(c.value))
+    shoe = Shoe.create_shoe()
+
+    player_up_card = shoe.deal_card()
+    print(player_up_card.print_str())
