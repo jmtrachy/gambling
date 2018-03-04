@@ -5,7 +5,7 @@ from abc import ABCMeta, abstractmethod
 
 class Roulette:
     @staticmethod
-    def __spin(strategy):
+    def spin(strategy):
         spin_position = random.randint(1, 38)
         returned_value = 0 - strategy.dollars_per_spin
 
@@ -108,7 +108,7 @@ class Roulette:
 
         for j in range(strategy.num_spins):
             spins = j + 1
-            dollar_adjustment = Roulette.__spin(strategy)
+            dollar_adjustment = Roulette.spin(strategy)
             current_balance += dollar_adjustment
             if dollar_adjustment >= 5 * strategy.dollars_per_spin:
                 omgs += 1
@@ -211,7 +211,8 @@ class RouletteStrategy:
         inside_bet_returns = {}
         for num in range(1, 39):
             inside_bet_returns[num] = self.compute_inside_spin_return(num)
-            print('Return for spinning a {} = {}'.format(num, self.compute_inside_spin_return(num)))
+            if self.compute_inside_spin_return(num) > 0:
+                print('Return for spinning a {} = {}'.format(num, self.compute_inside_spin_return(num)))
 
         return inside_bet_returns
 
@@ -294,35 +295,122 @@ def current_time_millis():
     return int(round(time.time() * 1000))
 
 
+# Adding bets to a single number. If num_bets = 5 and number = 17 then it will make a $5 on 17.
 def add_bets_to_single_number(num_bets, number, bet_collection):
     for j in range(0, num_bets):
         bet_collection.append(InsideBet([number]))
 
 
-# def add_bets_to_two_numbers(num_bets)
+# Adding bets to two numbers. If num_bets = 5, number_one = 17, and number_two = 20 it will bet $5 on
+# the 17/20 split
+def add_bets_to_two_numbers(num_bets, number_one, number_two, bet_collection):
+    for j in range(0, num_bets):
+        bet_collection.append(InsideBet([number_one, number_two]))
+
+
+# Adding bets to three numbers. If num_bets = 5, number_one = 16, number_two = 17, and number_three = 18 then
+# it will bet $5 on the row of 16/17/18.
+def add_bets_to_three_numbers(num_bets, number_one, number_two, number_three, bet_collection):
+    for j in range(0, num_bets):
+        bet_collection.append(InsideBet([number_one, number_two, number_three]))
+
+
+# Adding four-corner bets. If num_bets = 5, number_one = 17, number_two = 18, number_three = 20, number_four = 21
+# then it will bet $5 on the corner that touches each of those four numbers.
+def add_bets_to_four_numbers(num_bets, number_one, number_two, number_three, number_four, bet_collection):
+    for j in range(0, num_bets):
+        bet_collection.append(InsideBet([number_one, number_two, number_three, number_four]))
+
+
+# Jimbob power number style bet. This bets five bets - one on the power number and one on each of its four corners
+def add_jimbob_power(num_bets, power_num, corner_one, corner_two, corner_three, corner_four, corner_five, corner_six,
+                     corner_seven, corner_eight, bet_collection):
+    for j in range(0, num_bets):
+        # Add the power number bet
+        add_bets_to_single_number(1, power_num, bet_collection)
+        # Add each of the other four corner bets
+        add_bets_to_four_numbers(1, corner_one, corner_two, corner_four, power_num, bet_collection)
+        add_bets_to_four_numbers(1, corner_two, corner_three, power_num, corner_five, bet_collection)
+        add_bets_to_four_numbers(1, corner_four, power_num, corner_six, corner_seven, bet_collection)
+        add_bets_to_four_numbers(1, power_num, corner_five, corner_seven, corner_eight, bet_collection)
+
+
+# Convenience method for making a standard jimbob power bet
+def add_jimbob_seventeen(num_bets, bet_collection):
+    add_jimbob_power(num_bets, 17, 13, 14, 15, 16, 18, 19, 20, 21, bet_collection)
+
+
+# Convenience method for making a standard rupp bet on jimbobs number
+def add_rupp_seventeen(num_bets, bet_collection):
+    add_rupp_power(num_bets, 17, 14, 16, 18, 20, bet_collection)
+
+
+# Ruppinator power number style bet. This bets five bets - one on the power number and one on each of it's side splits
+def add_rupp_power(num_bets, power_num, side_one, side_two, side_three, side_four, bet_collection):
+    for j in range(0, num_bets):
+        # Add the power number bet
+        add_bets_to_single_number(1, power_num, bet_collection)
+        # Add each of the other four side bets
+        add_bets_to_two_numbers(1, power_num, side_one, bet_collection)
+        add_bets_to_two_numbers(1, power_num, side_two, bet_collection)
+        add_bets_to_two_numbers(1, power_num, side_three, bet_collection)
+        add_bets_to_two_numbers(1, power_num, side_four, bet_collection)
+
+
+# Convenience method for making a rupp bet on 26
+def add_rupp_twosix(num_bets, bet_collection):
+    add_rupp_power(num_bets, 26, 23, 25, 27, 29, bet_collection)
+
 
 if __name__ == '__main__':
     start_millis = current_time_millis()
 
-    inners = []
+    inners = []  # Bets on the inside
+    outers = []  # Bets on the outside
 
-    bet_size = 50
-    # $20 on 17
-    add_bets_to_single_number(bet_size, 17, inners)
-    # $20 on 20
-    add_bets_to_single_number(bet_size, 26, inners)
-    # $20 on 20
-    # add_bets_to_single_number(bet_size, 5, inners)
-    # $20 on 20
-    # add_bets_to_single_number(bet_size, 14, inners)
+    # Bet 1 number all in - 5 spins - 12.5% chance of hitting
+    # starting_balance = 400
+    # spins = 5
+    # add_bets_to_single_number(80, 17, inners)
 
-    # inners.extend([InsideBet([17]), InsideBet([16, 17, 13, 14]), InsideBet([17, 18, 14, 15]), InsideBet([17, 20, 16, 19]), InsideBet([17, 20, 18, 21])])
-    # inners.extend([InsideBet([22, 23, 25, 26]), InsideBet([23, 24, 26, 27]), InsideBet([25, 26, 28, 29]), InsideBet([26, 27, 29, 30]), InsideBet([26])])
-    # inners.extend([InsideBet([26]), InsideBet([22, 23, 25, 26]), InsideBet([23, 24, 26, 27]), InsideBet([25, 26, 28, 29]), InsideBet([26, 27, 29, 30]), InsideBet([26, 23]), InsideBet([26, 25]), InsideBet([26, 27]), InsideBet([26, 29])])
+    # Bet 2 numbers REAL hard, 4 spins - 18% chance of hitting once, 1.55% chance of hitting more than once
+    # starting_balance = 400
+    # spins = 4
+    # add_bets_to_single_number(50, 17, inners)
+    # add_bets_to_single_number(50, 20, inners)
 
-    outers = []
-    rs = RouletteStrategy(inners, outers, 4, 400)
+    # Bet 3 numbers hard, 5 spins - 28.4% chance of hitting once, 5.3% chance of hitting more than once
+    # starting_balance = 400
+    # spins = 5
+    # add_bets_to_single_number(26, 5, inners)
+    # add_bets_to_single_number(27, 17, inners)
+    # add_bets_to_single_number(27, 26, inners)
+
+    # Bet 4 numbers, 4 spins - 30.1% chance of hitting once, 5.7% chance of hitting more than once
+    # starting_balance = 400
+    # spins = 4
+    # add_bets_to_single_number(25, 5, inners)
+    # add_bets_to_single_number(25, 17, inners)
+    # add_bets_to_single_number(25, 26, inners)
+    # add_bets_to_single_number(25, 14, inners)
+
+    # Bet 4 numbers, traditional - 33.5% chance of hitting once, 9% chance of hitting more than once
+    starting_balance = 400
+    spins = 5
+    add_bets_to_single_number(20, 5, inners)
+    add_bets_to_single_number(20, 17, inners)
+    add_bets_to_single_number(20, 26, inners)
+    add_bets_to_single_number(20, 14, inners)
+
+    # 2017 approach - 3 numbers, 5 spins - 28.4% chance of hitting once, 5.3% chance of hitting more than once
+    # starting_balance = 300
+    # spins = 5
+    # add_bets_to_single_number(20, 14, inners)
+    # add_bets_to_single_number(20, 17, inners)
+    # add_bets_to_single_number(20, 20, inners)
+
+    rs = RouletteStrategy(inners, outers, spins, starting_balance)
     Roulette.play(rs, 1000000)
 
     end_millis = current_time_millis()
-    print('Execution took {} milliseconds.')
+    print('Execution took {} milliseconds.'.format(end_millis - start_millis))
