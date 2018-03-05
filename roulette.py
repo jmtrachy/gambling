@@ -409,6 +409,21 @@ if __name__ == '__main__':
     # add_bets_to_single_number(20, 17, inners)
     # add_bets_to_single_number(20, 20, inners)
 
+    # Real pansy approach - 4 numbers at $13, 2 numbers at $14 -
+    # starting_balance = 400
+    # spins = 5
+    # add_bets_to_single_number(13, 1, inners)
+    # add_bets_to_single_number(13, 2, inners)
+    # add_bets_to_single_number(13, 3, inners)
+    # add_bets_to_single_number(13, 14, inners)
+    # add_bets_to_single_number(14, 17, inners)
+    # add_bets_to_single_number(14, 26, inners)
+
+    # Real aggressive ruppinator power number approach
+    # starting_balance = 400
+    # spins = 5
+    # add_rupp_power(16, 17, 14, 16, 18, 20, inners)
+
     rs = RouletteStrategy(inners, outers, spins, starting_balance)
     Roulette.play(rs, 1000000)
 
